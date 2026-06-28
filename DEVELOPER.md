@@ -29,7 +29,7 @@ A **voice AI system** built on Vapi.ai. A local (or deployed) Node.js + Express 
 - **Voice Platform**: Vapi.ai (phone calls, speech-to-text, text-to-speech)
 - **Backend**: Node.js + Express
 - **Conversation AI Model**: OpenAI GPT-4 (run by Vapi, configured in the webhook response)
-- **Spec-writing Model**: OpenAI GPT-4o (called directly by this server at end-of-call)
+- **Spec-writing Model**: Groq `llama-3.3-70b-versatile` (called directly by this server at end-of-call, via Groq's OpenAI-compatible API)
 - **Transcription**: Deepgram Nova-2
 - **Voice**: Vapi built-in `Elliot` for web calls; configured in the Vapi dashboard for phone calls
 - **Data Storage**: Postgres when `DATABASE_URL` is set, otherwise a local JSON file
@@ -55,7 +55,7 @@ A **voice AI system** built on Vapi.ai. A local (or deployed) Node.js + Express 
 │   ├─ reads enhanced-prompt.txt  │  ← persona + 7-lens framework
 │   ├─ reads/writes memory        │  ← Postgres or vapi-memory.json
 │   └─ at end-of-call:            │
-│        calls OpenAI → writes    │  ← specs/spec-<caller>.md
+│        calls Groq → writes      │  ← specs/spec-<caller>.md
 │        specs/spec-<caller>.md   │
 └─────────────────────────────────┘
 ```
@@ -78,7 +78,7 @@ A **voice AI system** built on Vapi.ai. A local (or deployed) Node.js + Express 
 ### 3. End of call
 1. Vapi posts `POST /webhook/end-of-call-report` with the full transcript.
 2. The server saves the transcript to the caller's history and rebuilds their conversation summary (last 3 calls).
-3. The server then sends the caller's **entire** call history to OpenAI and writes a structured spec to `specs/spec-<caller>.md` (and, on Postgres, to a `spec` column). See [Spec Generation](#spec-generation).
+3. The server then sends the caller's **entire** call history to Groq and writes a structured spec to `specs/spec-<caller>.md` (and, on Postgres, to a `spec` column). See [Spec Generation](#spec-generation).
 4. Web calls (`web_*` numbers) are intentionally not persisted and produce no spec.
 
 ### 4. Returning caller
@@ -95,7 +95,7 @@ blueprint-voice-agent/
 ├── vapi-memory.json            # Conversation storage in local dev (auto-created, gitignored)
 ├── specs/                      # Generated build specs (auto-created, gitignored)
 │   └── spec-<caller>.md
-├── .env.example                # Documents OPENAI_API_KEY, SPEC_MODEL, DATABASE_URL, PORT
+├── .env.example                # Documents GROQ_API_KEY, SPEC_MODEL, DATABASE_URL, PORT
 ├── package.json                # Node dependencies
 ├── package-lock.json
 ├── fly.toml                    # Fly.io deploy config
@@ -110,7 +110,7 @@ blueprint-voice-agent/
 ### Key parts of `server-vapi-memory.js`
 - **Storage adapter** (top of file): one object with the same methods backed by either Postgres or a local JSON file. Methods: `init`, `getCustomer`, `saveCall`, `getAll`, `count`, `saveSpec`, `getSpec`, `clear`.
 - **`buildConversationSummary()`**: condenses the last 3 calls into the text injected for returning callers.
-- **`generateSpec(callHistory)`**: sends the full transcript to OpenAI and returns markdown. No-ops (returns `null`) when `OPENAI_API_KEY` is unset.
+- **`generateSpec(callHistory)`**: sends the full transcript to Groq and returns markdown. No-ops (returns `null`) when `GROQ_API_KEY` is unset.
 - **`handleAssistantRequest()`**: builds and returns the transient assistant config.
 - **`handleEndOfCall()`**: saves the transcript, then generates and stores the spec.
 - **`handleTranscript()`**: logs live transcript lines.
@@ -124,13 +124,13 @@ blueprint-voice-agent/
 2. Add a payment method (phone numbers ~$1-5/mo; calls ~$0.10-0.30/min depending on model + voice).
 3. Buy a phone number under **Phone Numbers** (for inbound phone calls). Web SDK calls do not require a number.
 
-### 2. Set up an OpenAI key (for spec generation)
-1. Create a key at https://platform.openai.com.
+### 2. Set up a Groq key (for spec generation)
+1. Create a key at https://console.groq.com.
 2. Put it in a local `.env` file (copy `.env.example`):
    ```
-   OPENAI_API_KEY=sk-...
+   GROQ_API_KEY=gsk_...
    ```
-   Without it, calls still work and transcripts still save — only the spec generation is skipped.
+   Without it, calls still work and transcripts still save; only the spec generation is skipped.
 
 ### 3. Install and run
 ```bash
@@ -159,8 +159,8 @@ Copy the HTTPS URL (e.g. `https://abc123.ngrok-free.dev`). Keep the terminal ope
 ### Environment variables
 | Variable | Required | Purpose |
 |---|---|---|
-| `OPENAI_API_KEY` | For specs | Enables end-of-call spec generation. |
-| `SPEC_MODEL` | No | OpenAI model for spec writing. Default `gpt-4o`. |
+| `GROQ_API_KEY` | For specs | Enables end-of-call spec generation (Groq). |
+| `SPEC_MODEL` | No | Groq model for spec writing. Default `llama-3.3-70b-versatile`. |
 | `DATABASE_URL` | No | Postgres connection string. When set, memory + specs persist in Postgres. |
 | `PORT` | No | Server port. Default `3000`. |
 
@@ -171,7 +171,7 @@ Copy the HTTPS URL (e.g. `https://abc123.ngrok-free.dev`). Keep the terminal ope
 At end-of-call, after the transcript is saved, the server calls `generateSpec(callHistory)`:
 
 1. It concatenates **all** of the caller's calls into a single transcript (so the spec gets richer every call).
-2. It sends that, with a fixed architect system prompt (`SPEC_SYSTEM_PROMPT` in the server), to OpenAI.
+2. It sends that, with a fixed architect system prompt (`SPEC_SYSTEM_PROMPT` in the server), to Groq.
 3. The model returns markdown in a fixed structure:
    - `# Title`
    - `## Overview`
@@ -187,7 +187,7 @@ At end-of-call, after the transcript is saved, the server calls `generateSpec(ca
    - **Postgres backend**: stores it in the `spec` column (durable) and also writes the file (best-effort).
 5. Retrieve it any time at `GET /spec/:phone`.
 
-**Failure isolation**: spec generation runs in its own try/catch. If OpenAI errors (bad key, rate limit, outage), it's logged and the webhook still returns `200` — call saving is never affected.
+**Failure isolation**: spec generation runs in its own try/catch. If Groq errors (bad key, rate limit, outage), it's logged and the webhook still returns `200`; call saving is never affected.
 
 **To change the spec format or model**, edit `SPEC_SYSTEM_PROMPT` or set `SPEC_MODEL` in the environment.
 
@@ -292,12 +292,12 @@ Specs are written alongside as `specs/spec-<sanitized-phone>.md`.
 ## Deployment
 
 ### Render (`render.yaml`)
-Defines a Node web service plus a free Postgres database (`blueprint-db`). On deploy, `DATABASE_URL` is injected, so memory and specs persist in Postgres. Set `OPENAI_API_KEY` as an environment variable in the Render dashboard (do not commit it).
+Defines a Node web service plus a free Postgres database (`blueprint-db`). On deploy, `DATABASE_URL` is injected, so memory and specs persist in Postgres. Set `GROQ_API_KEY` as an environment variable in the Render dashboard (do not commit it).
 
 ### Fly.io (`fly.toml`)
 App `blueprint-voice-agent`, internal port 3000, health check `/healthz`, one always-on machine. Set secrets with:
 ```bash
-fly secrets set OPENAI_API_KEY=sk-...
+fly secrets set GROQ_API_KEY=gsk_...
 fly secrets set DATABASE_URL=postgres://...   # if using Postgres
 fly deploy --ha=false
 ```
@@ -312,7 +312,7 @@ For both platforms, point your Vapi number's Server URL at `https://<your-app-ho
 
 **AI doesn't remember previous calls** — confirm `end-of-call-report` is enabled in Vapi; check logs for `💾 Saved conversation`; verify the phone number format matches what's stored.
 
-**No spec is generated** — check logs. `⏭️ OPENAI_API_KEY not set` means add the key. `❌ Failed to generate spec: OpenAI 401/429/...` means the key is invalid or rate-limited; the call itself still saved fine.
+**No spec is generated** — check logs. `⏭️ GROQ_API_KEY not set` means add the key. `❌ Failed to generate spec: Groq 401/429/...` means the key is invalid or rate-limited; the call itself still saved fine.
 
 **Specs vanish after a deploy/restart** — expected on ephemeral hosts without Postgres. Set `DATABASE_URL` so specs persist, and read them via `GET /spec/:phone`.
 
@@ -330,7 +330,7 @@ node test-webhook.js     # prints the system-prompt length and excerpts
 
 ### End-of-call + spec, locally
 ```bash
-# With OPENAI_API_KEY set in .env:
+# With GROQ_API_KEY set in .env:
 curl -X POST http://localhost:3000/webhook/end-of-call-report \
   -H 'Content-Type: application/json' \
   -d '{"message":{"type":"end-of-call-report","call":{"id":"c1","customer":{"number":"+15551234567"},"duration":90,"endedReason":"customer-ended-call"},"artifact":{"transcript":"yes","messagesOpenAIFormatted":[{"role":"assistant","content":"What do you want to build?"},{"role":"user","content":"A dog-walking booking app where customers pick a time slot."}]}}}'

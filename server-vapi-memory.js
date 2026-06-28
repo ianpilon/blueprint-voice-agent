@@ -188,7 +188,8 @@ function buildConversationSummary(recentCalls) {
 // Spec generation
 //   At end-of-call, turn the running transcript into a structured,
 //   buildable markdown spec at specs/spec-<caller>.md.
-//   Requires OPENAI_API_KEY; skipped gracefully when unset.
+//   Runs on Groq via its OpenAI-compatible API. Requires
+//   GROQ_API_KEY; skipped gracefully when unset.
 // ============================================================
 
 const fetch = require('node-fetch');
@@ -235,8 +236,8 @@ What was explicitly deferred.
 Anything underspecified that a builder would need answered before starting.`;
 
 async function generateSpec(callHistory) {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log('   ⏭️  OPENAI_API_KEY not set — skipping spec generation');
+  if (!process.env.GROQ_API_KEY) {
+    console.log('   ⏭️  GROQ_API_KEY not set — skipping spec generation');
     return null;
   }
 
@@ -249,13 +250,13 @@ async function generateSpec(callHistory) {
     })
     .join('\n\n');
 
-  const model = process.env.SPEC_MODEL || 'gpt-4o';
+  const model = process.env.SPEC_MODEL || 'llama-3.3-70b-versatile';
 
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -268,7 +269,7 @@ async function generateSpec(callHistory) {
   });
 
   if (!resp.ok) {
-    throw new Error(`OpenAI ${resp.status}: ${await resp.text()}`);
+    throw new Error(`Groq ${resp.status}: ${await resp.text()}`);
   }
 
   const data = await resp.json();
