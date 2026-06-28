@@ -49,6 +49,7 @@ if (usePostgres) {
           conversation_summary TEXT NOT NULL DEFAULT ''
         );
       `);
+      await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS spec TEXT NOT NULL DEFAULT '';`);
     },
     async getCustomer(phone) {
       const { rows } = await pool.query(
@@ -80,6 +81,14 @@ if (usePostgres) {
     async count() {
       const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM customers');
       return rows[0].n;
+    },
+    async saveSpec(phone, markdown) {
+      await pool.query('UPDATE customers SET spec = $2 WHERE phone_number = $1', [phone, markdown]);
+      try { fs.writeFileSync(specFilePath(phone), markdown); } catch (e) { /* ephemeral FS */ }
+    },
+    async getSpec(phone) {
+      const { rows } = await pool.query('SELECT spec FROM customers WHERE phone_number = $1', [phone]);
+      return rows[0]?.spec || null;
     },
     async clear() {
       await pool.query('DELETE FROM customers');
@@ -131,6 +140,13 @@ if (usePostgres) {
     async count() {
       return Object.keys(read().customers).length;
     },
+    async saveSpec(phone, markdown) {
+      fs.writeFileSync(specFilePath(phone), markdown);
+    },
+    async getSpec(phone) {
+      const p = specFilePath(phone);
+      return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
+    },
     async clear() {
       write({ customers: {} });
     },
@@ -166,6 +182,97 @@ function buildConversationSummary(recentCalls) {
   summary += `\nIMPORTANT: Reference specific details from the previous conversation history above. The caller expects you to remember what they shared.\n`;
 
   return summary;
+}
+
+// ============================================================
+// Spec generation
+//   At end-of-call, turn the running transcript into a structured,
+//   buildable markdown spec at specs/spec-<caller>.md.
+//   Requires OPENAI_API_KEY; skipped gracefully when unset.
+// ============================================================
+
+const fetch = require('node-fetch');
+
+const SPECS_DIR = path.join(__dirname, 'specs');
+if (!fs.existsSync(SPECS_DIR)) fs.mkdirSync(SPECS_DIR, { recursive: true });
+
+const specFilePath = (phone) =>
+  path.join(SPECS_DIR, `spec-${String(phone).replace(/[^a-zA-Z0-9]/g, '')}.md`);
+
+const SPEC_SYSTEM_PROMPT = `You are a senior software architect. You will be given the transcript of one or more voice conversations between an interviewer ("Blueprint") and a non-technical person describing an app they want built. Turn that conversation into a clear, structured specification a developer or a coding AI could build from.
+
+Translate the person's plain-language descriptions into concrete software requirements. Infer reasonable structure where the conversation implies it, but do not invent major features they never mentioned. Where something important was never discussed, list it under "Open Questions" rather than guessing.
+
+Output ONLY GitHub-flavored markdown, no preamble, in exactly this structure:
+
+# <App name or one-line title>
+
+## Overview
+One short paragraph: what the app is and the problem it solves, in plain language.
+
+## Target Users
+The user roles, and who each one is.
+
+## Core Job
+The single most important thing the app must do.
+
+## User Flow
+Numbered, step-by-step path through the core action, framed as screens and actions.
+
+## Data Model
+The things the app stores, as a bulleted list. For each, list its fields and note relationships (e.g. "a Customer has many Bookings").
+
+## Screens
+The distinct screens or pages implied by the flow, each with a one-line purpose.
+
+## Version 1 Scope
+### In
+What the first buildable version includes.
+### Out (later)
+What was explicitly deferred.
+
+## Open Questions
+Anything underspecified that a builder would need answered before starting.`;
+
+async function generateSpec(callHistory) {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('   ⏭️  OPENAI_API_KEY not set — skipping spec generation');
+    return null;
+  }
+
+  const conversation = callHistory
+    .map((call, i) => {
+      const lines = (call.transcript || [])
+        .map(m => `${m.role === 'user' ? 'Client' : 'Blueprint'}: ${m.message}`)
+        .join('\n');
+      return `--- Call ${i + 1} ---\n${lines}`;
+    })
+    .join('\n\n');
+
+  const model = process.env.SPEC_MODEL || 'gpt-4o';
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: SPEC_SYSTEM_PROMPT },
+        { role: 'user', content: `Here is the full transcript:\n\n${conversation}\n\nWrite the specification.` },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    throw new Error(`OpenAI ${resp.status}: ${await resp.text()}`);
+  }
+
+  const data = await resp.json();
+  return data.choices?.[0]?.message?.content?.trim() || null;
 }
 
 // ============================================================
@@ -293,6 +400,18 @@ async function handleEndOfCall(req, res) {
     console.error('❌ Failed to save call:', err);
   }
 
+  // Turn the running transcript into a structured, buildable spec
+  try {
+    const updated = await storage.getCustomer(phoneNumber);
+    const spec = await generateSpec(updated.callHistory);
+    if (spec) {
+      await storage.saveSpec(phoneNumber, spec);
+      console.log(`📐 Spec written: ${path.basename(specFilePath(phoneNumber))} (${spec.length} chars)`);
+    }
+  } catch (err) {
+    console.error('❌ Failed to generate spec:', err.message);
+  }
+
   return res.sendStatus(200);
 }
 
@@ -332,6 +451,7 @@ code{background:#f3f3f3;padding:2px 6px;border-radius:4px}
   <li><a href="/memory">GET /memory</a> — view all conversation history</li>
   <li><code>GET /memory/:phone</code> — view one caller's history</li>
   <li><code>DELETE /memory</code> — clear all history</li>
+  <li><code>GET /spec/:phone</code> — view the generated build spec for one caller</li>
   <li><a href="/healthz">GET /healthz</a> — keep-alive ping target</li>
 </ul>
 </body></html>`);
@@ -360,6 +480,16 @@ app.delete('/memory', async (req, res) => {
   }
 });
 
+app.get('/spec/:phone', async (req, res) => {
+  try {
+    const spec = await storage.getSpec(req.params.phone);
+    if (!spec) return res.status(404).json({ error: 'No spec found for this caller' });
+    res.type('text/markdown').send(spec);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // Startup
 // ============================================================
@@ -381,6 +511,7 @@ app.delete('/memory', async (req, res) => {
     console.log(`📝 End of call: POST /webhook/end-of-call-report`);
     console.log(`💬 Transcript: POST /webhook/transcript`);
     console.log(`💾 View memory: GET /memory/:phone`);
+    console.log(`📐 View spec: GET /spec/:phone`);
     console.log(`🗑️  Clear memory: DELETE /memory`);
     console.log(`❤️  Health: GET /healthz`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');

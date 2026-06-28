@@ -4,6 +4,9 @@ node_modules/
 *.log
 vapi-memory.json
 
+# Generated build specs (contain caller phone numbers + their app ideas)
+specs/
+
 # Local-only test copies of the landing page (point at localhost)
 index-local*.html
 docs/index-local*.html
