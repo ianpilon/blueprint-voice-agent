@@ -1,0 +1,11 @@
+node_modules/
+.env
+.DS_Store
+*.log
+vapi-memory.json
+
+# Local-only test copies of the landing page (point at localhost)
+index-local*.html
+docs/index-local*.html
+docs/redesign*.html
+redesign*.html

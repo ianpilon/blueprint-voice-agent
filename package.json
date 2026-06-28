@@ -1,0 +1,25 @@
+{
+  "name": "blueprint-voice-agent",
+  "version": "1.0.0",
+  "description": "Vapi voice bot that interviews a non-technical person about the app they want and turns the conversation into a buildable spec, with conversation memory across calls",
+  "main": "server-vapi-memory.js",
+  "scripts": {
+    "start": "node server-vapi-memory.js",
+    "test": "node test-webhook.js"
+  },
+  "keywords": [
+    "vapi",
+    "voice-ai",
+    "conversation-memory",
+    "webhook",
+    "elevenlabs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.20.0"
+  }
+}

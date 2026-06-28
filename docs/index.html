@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unfair Access — Find the Advantage You Already Have</title>
+  <meta name="description" content="Unfair Access is a voice agent that helps would-be founders find where they already have an edge most founders would spend months and a lot of credibility to get. Call now to try it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* Say Briefly — creative sketchbook on cream paper */
+      --forest-ink: #1a3300;
+      --highlighter-yellow: #ffe95c;
+      --cream-paper: #fcfaf5;
+      --pencil-gray: #b6b6b6;
+      --whisper-gray: #8a8a82;
+      --sticky-teal: #a8e5e5;
+      --sticky-mint: #d5f5c2;
+      --sticky-blush: #f6d0ff;
+      --terracotta: #cb5521;
+
+      --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+      --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+      --radius-button: 6px;
+      --radius-card: 12px;
+      --radius-nav: 16px;
+
+      --shadow-subtle: rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+      --shadow-nav: rgba(255, 235, 90, 0.09) 0px 18px 60px 0px, rgba(255, 235, 90, 0.18) 0px 6px 24px 0px;
+
+      --page-max: 1200px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 18px;
+      line-height: 1.5;
+      font-weight: 400;
+      color: var(--forest-ink);
+      background: var(--cream-paper);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .wrap {
+      max-width: var(--page-max);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    ::selection { background: var(--highlighter-yellow); color: var(--forest-ink); }
+
+    /* ── Reveal animations ───────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ── Editorial highlight (marker wash) ───────────── */
+    .hl {
+      background: var(--highlighter-yellow);
+      padding: 0.02em 0.12em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      border-radius: 2px;
+    }
+
+    /* ── Micro-label / section kicker ────────────────── */
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--whisper-gray);
+    }
+
+    /* ── Navigation (floating pill) ──────────────────── */
+    nav {
+      position: sticky;
+      top: 16px;
+      z-index: 50;
+      padding: 0 24px;
+      margin-top: 16px;
+    }
+    nav .bar {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--cream-paper);
+      border: 1px solid var(--pencil-gray);
+      border-radius: var(--radius-nav);
+      padding: 10px 14px 10px 16px;
+      box-shadow: var(--shadow-nav);
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--highlighter-yellow);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      color: var(--forest-ink);
+    }
+    .logo-word {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 19px;
+      letter-spacing: -0.01em;
+      color: var(--forest-ink);
+    }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border-radius: var(--radius-button);
+      border: 1px solid transparent;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .btn svg { width: 18px; height: 18px; flex: none; }
+
+    /* Primary — filled forest ink */
+    .btn-primary {
+      background: var(--forest-ink);
+      color: var(--cream-paper);
+      font-size: 16px;
+      padding: 16px 32px;
+      box-shadow: var(--shadow-subtle);
+    }
+    .btn-primary:hover { background: #244600; }
+    .btn-primary:active { transform: translateY(1px); }
+
+    /* Nav outline button */
+    .btn-outline {
+      background: transparent;
+      color: var(--forest-ink);
+      border-color: var(--forest-ink);
+      font-size: 14px;
+      padding: 9px 18px;
+    }
+    .btn-outline:hover { background: var(--forest-ink); color: var(--cream-paper); }
+
+    /* Active call state — terracotta "stop" */
+    [data-call-btn][data-state="active"] {
+      background: var(--terracotta);
+      border-color: var(--terracotta);
+      color: var(--cream-paper);
+    }
+    [data-call-btn][data-state="active"]:hover { background: #b4471a; }
+    /* Connecting — dim */
+    [data-call-btn][data-state="connecting"] { opacity: 0.7; cursor: progress; }
+
+    /* Block clicks until the voice SDK has loaded and bound its handlers. */
+    body:not(.sdk-ready) [data-call-btn] {
+      opacity: 0.5;
+      pointer-events: none;
+      cursor: progress;
+    }
+
+    /* ── Hero ────────────────────────────────────────── */
+    .hero { padding: 96px 0 80px; }
+    .hero-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--highlighter-yellow);
+      color: var(--forest-ink);
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      margin-bottom: 28px;
+    }
+    .badge svg { width: 15px; height: 15px; }
+    h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2.7rem, 1.6rem + 4.6vw, 5.2rem);
+      line-height: 1.02;
+      letter-spacing: 0.01em;
+      color: var(--forest-ink);
+      margin-bottom: 28px;
+    }
+    .hero-lead {
+      max-width: 600px;
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--forest-ink);
+      margin-bottom: 36px;
+    }
+    .hero-aside {
+      font-size: 14px;
+      color: var(--whisper-gray);
+      margin-top: 16px;
+    }
+
+    /* Download transcript — pastel secondary, hidden until ready */
+    .download-transcript {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 22px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--forest-ink);
+      background: var(--sticky-mint);
+      border: 1px solid var(--forest-ink);
+      border-radius: var(--radius-button);
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .download-transcript[data-ready="1"] { display: inline-flex; }
+    .download-transcript:hover { background: #c7f0b1; }
+    .download-transcript:active { transform: translateY(1px); }
+    .download-transcript svg { width: 17px; height: 17px; }
+
+    /* ── Generic section header ──────────────────────── */
+    section { padding: 0; }
+    .block { padding: 72px 0; }
+    .sec-head { text-align: center; margin-bottom: 48px; }
+    .sec-head .kicker { display: block; margin-bottom: 14px; }
+    h2 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2rem, 1.3rem + 2.6vw, 3.3rem);
+      line-height: 1.05;
+      letter-spacing: 0.01em;
+      color: var(--forest-ink);
+    }
+
+    /* ── Process: two steps ──────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+    .step {
+      border-radius: var(--radius-card);
+      padding: 32px;
+      border: 1px solid var(--forest-ink);
+    }
+    .step.mint { background: var(--sticky-mint); }
+    .step.teal { background: var(--sticky-teal); }
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--forest-ink);
+      opacity: 0.6;
+      margin-bottom: 14px;
+    }
+    .step h3 {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .step p { font-size: 16px; line-height: 1.5; }
+
+    /* ── Framework: four lenses ──────────────────────── */
+    .framework-intro {
+      max-width: 620px;
+      margin: -24px auto 48px;
+      text-align: center;
+      font-size: 18px;
+      color: var(--forest-ink);
+    }
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .tier {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      background: var(--cream-paper);
+      border: 1px solid var(--forest-ink);
+      border-radius: var(--radius-card);
+      padding: 24px;
+    }
+    .tier.synthesis {
+      background: var(--sticky-mint);
+      grid-column: 1 / -1;
+    }
+    .tier-num {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--highlighter-yellow);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--forest-ink);
+    }
+    .tier-body { flex: 1; }
+    .tier-body h4 {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 19px;
+      line-height: 1.25;
+      margin-bottom: 6px;
+    }
+    .tier-body p { font-size: 15px; line-height: 1.5; color: #33491f; }
+    .tier-tag {
+      flex: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 9999px;
+      border: 1px solid var(--forest-ink);
+      color: var(--forest-ink);
+    }
+    .tier-tag.synthesis { background: var(--highlighter-yellow); border-color: var(--highlighter-yellow); }
+
+    /* ── Closing CTA ─────────────────────────────────── */
+    .cta { text-align: center; }
+    .cta-inner { max-width: 720px; margin: 0 auto; }
+    .cta h2 { margin-bottom: 16px; }
+    .cta-sub { font-size: 18px; color: var(--forest-ink); margin-bottom: 32px; }
+
+    /* ── Footer ──────────────────────────────────────── */
+    footer { border-top: 1px solid var(--pencil-gray); margin-top: 40px; }
+    footer .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 28px;
+      padding-bottom: 28px;
+    }
+    footer p { font-family: var(--font-body); font-weight: 600; font-size: 15px; }
+    footer a { color: var(--forest-ink); text-decoration: none; font-size: 14px; border-bottom: 1px solid var(--pencil-gray); }
+    footer a:hover { border-color: var(--forest-ink); }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 720px) {
+      body { font-size: 17px; }
+      .hero { padding: 64px 0 56px; }
+      .block { padding: 56px 0; }
+      .steps, .tiers { grid-template-columns: 1fr; }
+      .tier.synthesis { grid-column: auto; }
+      .logo-word { font-size: 17px; }
+      footer .wrap { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="bar">
+      <div class="logo">
+        <span class="logo-mark">UA</span>
+        <span class="logo-word">Unfair Access</span>
+      </div>
+      <a href="#" class="btn btn-outline" data-call-btn data-idle-label="Call Now"><span data-call-label>Call Now</span></a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-inner reveal">
+        <p class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
+          Voice-powered for would-be founders
+        </p>
+        <h1>Find the <span class="hl">unfair access</span><br>you already have</h1>
+        <p class="hero-lead">A voice agent that helps you surface the edge you're sitting on. The people, places, and hard-won knowledge most founders would spend months and a lot of credibility to get. One phone call is all it takes.</p>
+        <a href="#" class="btn btn-primary" data-call-btn data-idle-label="Find your unfair access">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span data-call-label>Find your unfair access</span>
+        </a>
+        <p class="hero-aside" data-call-status>Live conversation in your browser &middot; Or dial +1 (959) 881-0307</p>
+        <button type="button" class="download-transcript" data-download-transcript>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download transcript
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="block process">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Getting started</span>
+        <h2>Two steps</h2>
+      </div>
+      <div class="steps">
+        <div class="step mint reveal">
+          <div class="step-num">01</div>
+          <h3>Call</h3>
+          <p>Dial the number. The agent explains what unfair access means and starts with where you've actually worked.</p>
+        </div>
+        <div class="step teal reveal">
+          <div class="step-num">02</div>
+          <h3>Discover</h3>
+          <p>Have a natural conversation. The agent walks you through four lenses, at your pace, across multiple calls if needed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block framework">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">The method</span>
+        <h2>Four forms of <span class="hl">unfair access</span></h2>
+      </div>
+      <p class="framework-intro reveal">The strongest advantage almost always feels too ordinary to mention. These four lenses surface where you already have an edge newcomers can't fake and customers can't ignore, one conversation at a time.</p>
+      <div class="tiers">
+        <div class="tier reveal">
+          <span class="tier-num">1</span>
+          <div class="tier-body">
+            <h4>Work &mdash; Where you've been on the inside</h4>
+            <p>The specific systems, industries, and back-office worlds you've actually operated inside</p>
+          </div>
+          <span class="tier-tag">Lens</span>
+        </div>
+        <div class="tier reveal">
+          <span class="tier-num">2</span>
+          <div class="tier-body">
+            <h4>People &mdash; Who'll take your call</h4>
+            <p>Honest access to real customers who'll tell you the truth about their problems</p>
+          </div>
+          <span class="tier-tag">Lens</span>
+        </div>
+        <div class="tier reveal">
+          <span class="tier-num">3</span>
+          <div class="tier-body">
+            <h4>Knowledge &mdash; What took years to learn</h4>
+            <p>Hard-won expertise newcomers can't fake and customers can smell when it's real</p>
+          </div>
+          <span class="tier-tag">Lens</span>
+        </div>
+        <div class="tier reveal">
+          <span class="tier-num">4</span>
+          <div class="tier-body">
+            <h4>Communities &mdash; Where you're genuinely inside</h4>
+            <p>The groups where you're a known name, not an outsider doing research</p>
+          </div>
+          <span class="tier-tag">Lens</span>
+        </div>
+        <div class="tier synthesis reveal">
+          <span class="tier-num">5</span>
+          <div class="tier-body">
+            <h4>Synthesis &mdash; Your sharpest edge</h4>
+            <p>Name the strongest access you have and the first move to test it this week</p>
+          </div>
+          <span class="tier-tag synthesis">Always last</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block cta">
+    <div class="wrap">
+      <div class="cta-inner reveal">
+        <h2>Ready to find the edge<br>you already have?</h2>
+        <p class="cta-sub">One phone call. No signup. No app to install.</p>
+        <a href="#" class="btn btn-primary" data-call-btn data-idle-label="Find your unfair access">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span data-call-label>Find your unfair access</span>
+        </a>
+        <p class="hero-aside">Or dial +1 (959) 881-0307</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>Unfair Access</p>
+      <p><a href="https://github.com/ianpilon/unfair-access-voice-agent" target="_blank" rel="noopener">GitHub</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Intersection Observer for reveal animations
+    const reveals = document.querySelectorAll('.reveal');
+    if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            entry.target.style.transitionDelay = `${i * 50}ms`;
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach(el => observer.observe(el));
+    } else {
+      reveals.forEach(el => el.classList.add('visible'));
+    }
+  </script>
+
+  <script>
+    // Safety net: if the voice SDK module never finishes loading (network /
+    // CDN failure), tell the user instead of leaving the buttons stuck.
+    window.__sdkReady = false;
+    window.__sdkTimer = setTimeout(function () {
+      if (window.__sdkReady) return;
+      var s = document.querySelector('[data-call-status]');
+      if (s) s.textContent = 'Voice service is still loading. If this persists, refresh the page.';
+    }, 8000);
+  </script>
+
+  <script type="module">
+    // Browser voice calls via Vapi Web SDK
+    import Vapi from "https://esm.sh/@vapi-ai/web@2.3.8";
+
+    const VAPI_PUBLIC_KEY = "c7d496d8-e4fb-44fe-9ffe-755d41ae32c3";
+    const ASSISTANT_API = "https://unfair-access-voice-agent.voiceclaw.ca/webhook/assistant-request?web=1";
+    const HERO_STATUS_DEFAULT = "Live conversation in your browser · Or dial +1 (959) 881-0307";
+
+    let vapi = null;
+    let state = "idle"; // idle | connecting | active
+    let transcript = [];   // [{ role, text }] captured live during the call
+
+    const buttons = document.querySelectorAll('[data-call-btn]');
+    const heroStatus = document.querySelector('[data-call-status]');
+    const downloadBtn = document.querySelector('[data-download-transcript]');
+
+    function setState(next) {
+      state = next;
+      buttons.forEach(btn => {
+        const label = btn.querySelector('[data-call-label]');
+        const idle = btn.dataset.idleLabel || 'Call now';
+        if (state === 'connecting') label.textContent = 'Connecting…';
+        else if (state === 'active') label.textContent = 'End call';
+        else label.textContent = idle;
+        btn.dataset.state = state;
+      });
+      if (heroStatus) {
+        if (state === 'connecting') heroStatus.textContent = 'Connecting…';
+        else if (state === 'active') heroStatus.textContent = 'In conversation · Click again to end';
+        else heroStatus.textContent = HERO_STATUS_DEFAULT;
+      }
+    }
+
+    function ensureVapi() {
+      if (vapi) return vapi;
+      vapi = new Vapi(VAPI_PUBLIC_KEY);
+      vapi.on('call-start', () => {
+        transcript = [];
+        if (downloadBtn) downloadBtn.dataset.ready = '0';
+        setState('active');
+      });
+      vapi.on('call-end', () => {
+        setState('idle');
+        if (downloadBtn && transcript.length) downloadBtn.dataset.ready = '1';
+      });
+      // Capture finalized speech as it happens. Vapi emits one "final" event
+      // per phrase, so merge consecutive chunks from the same speaker into a
+      // single block; only start a new block when the speaker changes.
+      vapi.on('message', (msg) => {
+        if (msg && msg.type === 'transcript' && msg.transcriptType === 'final') {
+          const text = (msg.transcript || '').trim();
+          if (!text) return;
+          const last = transcript[transcript.length - 1];
+          if (last && last.role === msg.role) {
+            last.text += ' ' + text;
+          } else {
+            transcript.push({ role: msg.role, text });
+          }
+        }
+      });
+      vapi.on('error', (e) => {
+        console.error('Vapi error:', e);
+        setState('idle');
+      });
+      return vapi;
+    }
+
+    function downloadTranscript() {
+      if (!transcript.length) return;
+      const stamp = new Date();
+      const header = [
+        'Unfair Access — Conversation Transcript',
+        stamp.toLocaleString(),
+        '='.repeat(48),
+        ''
+      ].join('\n');
+      const body = transcript
+        .map(t => `${t.role === 'user' ? 'You' : 'Unfair Access'}: ${t.text}`)
+        .join('\n\n');
+      const blob = new Blob([header + body + '\n'], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const fileStamp = stamp.toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `unfair-access-transcript-${fileStamp}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    if (downloadBtn) downloadBtn.addEventListener('click', downloadTranscript);
+
+    async function startCall() {
+      setState('connecting');
+      try {
+        const res = await fetch(ASSISTANT_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: {
+              type: 'assistant-request',
+              call: { customer: { number: 'web_anonymous_' + Date.now() } }
+            }
+          })
+        });
+        if (!res.ok) throw new Error('Server returned ' + res.status);
+        const data = await res.json();
+        if (!data.assistant) throw new Error('No assistant config in response');
+        const v = ensureVapi();
+        await v.start(data.assistant);
+      } catch (err) {
+        console.error('startCall failed:', err);
+        setState('idle');
+        alert('Could not start the call: ' + (err.message || err));
+      }
+    }
+
+    function endCall() {
+      if (vapi) vapi.stop();
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (state === 'idle') startCall();
+        else if (state === 'active') endCall();
+        // ignore clicks while connecting
+      });
+    });
+
+    // Reaching here means the static `import` above resolved, so the SDK is
+    // loaded and every click handler is bound. Now it's safe to enable the
+    // buttons — until this point CSS keeps them non-clickable.
+    window.__sdkReady = true;
+    clearTimeout(window.__sdkTimer);
+    setState('idle');
+    document.body.classList.add('sdk-ready');
+  </script>
+
+</body>
+</html>

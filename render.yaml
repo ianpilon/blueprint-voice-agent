@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: blueprint-voice-agent
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        fromDatabase:
+          name: blueprint-db
+          property: connectionString
+
+databases:
+  - name: blueprint-db
+    plan: free
+    databaseName: blueprint
+    user: blueprint

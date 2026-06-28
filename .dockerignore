@@ -1,0 +1,7 @@
+node_modules
+.git
+.env
+*.log
+vapi-memory.json
+docs/index-local*.html
+index-local*.html
