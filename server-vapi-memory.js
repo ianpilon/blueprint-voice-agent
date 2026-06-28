@@ -453,6 +453,7 @@ code{background:#f3f3f3;padding:2px 6px;border-radius:4px}
   <li><code>GET /memory/:phone</code> — view one caller's history</li>
   <li><code>DELETE /memory</code> — clear all history</li>
   <li><code>GET /spec/:phone</code> — view the generated build spec for one caller</li>
+  <li><code>POST /spec/generate</code> — generate a spec from a posted transcript (used by web calls)</li>
   <li><a href="/healthz">GET /healthz</a> — keep-alive ping target</li>
 </ul>
 </body></html>`);
@@ -485,6 +486,23 @@ app.get('/spec/:phone', async (req, res) => {
   try {
     const spec = await storage.getSpec(req.params.phone);
     if (!spec) return res.status(404).json({ error: 'No spec found for this caller' });
+    res.type('text/markdown').send(spec);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Stateless spec generation for web calls: the browser holds the transcript
+// (anonymous web calls aren't persisted), so it posts the transcript here and
+// gets the markdown back. Body: { transcript: [{ role, message }] }
+app.post('/spec/generate', async (req, res) => {
+  try {
+    const transcript = req.body?.transcript;
+    if (!Array.isArray(transcript) || transcript.length === 0) {
+      return res.status(400).json({ error: 'transcript (non-empty array) required' });
+    }
+    const spec = await generateSpec([{ transcript }]);
+    if (!spec) return res.status(503).json({ error: 'Spec generation unavailable (GROQ_API_KEY not set)' });
     res.type('text/markdown').send(spec);
   } catch (err) {
     res.status(500).json({ error: err.message });

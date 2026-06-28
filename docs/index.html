@@ -256,6 +256,33 @@
     .download-transcript:active { transform: translateY(1px); }
     .download-transcript svg { width: 17px; height: 17px; }
 
+    /* Download build spec — teal sticky variant of the same button */
+    .download-transcript.as-spec { background: var(--sticky-teal); margin-left: 10px; }
+    .download-transcript.as-spec:hover { background: #8fdada; }
+
+    /* Spec status line + rendered spec panel (web calls) */
+    .spec-status { display: none; margin-top: 18px; font-size: 14px; color: var(--whisper-gray); }
+    .spec-status[data-show="1"] { display: block; }
+    .spec-panel {
+      display: none;
+      max-width: 720px;
+      margin: 24px auto 0;
+      text-align: left;
+      background: var(--cream-paper);
+      border: 1px solid var(--forest-ink);
+      border-radius: var(--radius-card);
+      padding: 22px 24px;
+    }
+    .spec-panel[data-ready="1"] { display: block; }
+    .spec-panel pre {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: var(--forest-ink);
+    }
+
     /* ── Generic section header ──────────────────────── */
     section { padding: 0; }
     .block { padding: 72px 0; }
@@ -422,10 +449,18 @@
           <span data-call-label>Describe your app</span>
         </a>
         <p class="hero-aside" data-call-status>Live voice conversation in your browser &middot; No signup</p>
-        <button type="button" class="download-transcript" data-download-transcript>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download transcript
-        </button>
+        <div>
+          <button type="button" class="download-transcript" data-download-transcript>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download transcript
+          </button>
+          <button type="button" class="download-transcript as-spec" data-download-spec>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            Download build spec
+          </button>
+        </div>
+        <p class="spec-status" data-spec-status></p>
+        <div class="spec-panel" data-spec-panel><pre data-spec-content></pre></div>
       </div>
     </div>
   </section>
@@ -584,15 +619,66 @@
 
     const VAPI_PUBLIC_KEY = "c7d496d8-e4fb-44fe-9ffe-755d41ae32c3";
     const ASSISTANT_API = "https://blueprint.voiceclaw.ca/webhook/assistant-request?web=1";
+    const SPEC_API = "https://blueprint.voiceclaw.ca/spec/generate";
     const HERO_STATUS_DEFAULT = "Live voice conversation in your browser · No signup";
 
     let vapi = null;
     let state = "idle"; // idle | connecting | active
     let transcript = [];   // [{ role, text }] captured live during the call
+    let specMarkdown = '';
 
     const buttons = document.querySelectorAll('[data-call-btn]');
     const heroStatus = document.querySelector('[data-call-status]');
     const downloadBtn = document.querySelector('[data-download-transcript]');
+    const specBtn = document.querySelector('[data-download-spec]');
+    const specStatus = document.querySelector('[data-spec-status]');
+    const specPanel = document.querySelector('[data-spec-panel]');
+    const specContent = document.querySelector('[data-spec-content]');
+
+    function resetSpecUI() {
+      specMarkdown = '';
+      if (specBtn) specBtn.dataset.ready = '0';
+      if (specStatus) { specStatus.dataset.show = '0'; specStatus.textContent = ''; }
+      if (specPanel) specPanel.dataset.ready = '0';
+      if (specContent) specContent.textContent = '';
+    }
+
+    async function generateSpec() {
+      if (!transcript.length) return;
+      if (specStatus) { specStatus.textContent = 'Writing your build spec…'; specStatus.dataset.show = '1'; }
+      try {
+        const res = await fetch(SPEC_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: transcript.map(t => ({ role: t.role, message: t.text })) })
+        });
+        if (!res.ok) throw new Error('Server returned ' + res.status);
+        specMarkdown = await res.text();
+        if (specContent) specContent.textContent = specMarkdown;
+        if (specPanel) specPanel.dataset.ready = '1';
+        if (specBtn) specBtn.dataset.ready = '1';
+        if (specStatus) specStatus.textContent = 'Your build spec is ready. Download it, or read it below.';
+      } catch (err) {
+        console.error('spec generation failed:', err);
+        if (specStatus) specStatus.textContent = 'Could not write the spec automatically. Your transcript is still available.';
+      }
+    }
+
+    function downloadSpec() {
+      if (!specMarkdown) return;
+      const stamp = new Date();
+      const blob = new Blob([specMarkdown], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const fileStamp = stamp.toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `blueprint-spec-${fileStamp}.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    if (specBtn) specBtn.addEventListener('click', downloadSpec);
 
     function setState(next) {
       state = next;
@@ -617,11 +703,13 @@
       vapi.on('call-start', () => {
         transcript = [];
         if (downloadBtn) downloadBtn.dataset.ready = '0';
+        resetSpecUI();
         setState('active');
       });
       vapi.on('call-end', () => {
         setState('idle');
         if (downloadBtn && transcript.length) downloadBtn.dataset.ready = '1';
+        generateSpec();
       });
       // Capture finalized speech as it happens. Vapi emits one "final" event
       // per phrase, so merge consecutive chunks from the same speaker into a
